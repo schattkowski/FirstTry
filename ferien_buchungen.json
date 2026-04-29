@@ -1,0 +1,67 @@
+{
+  "buchungen": [
+    {
+      "id": "2wdp8r7x8",
+      "wohnungId": 2,
+      "startDatum": "2026-02-17",
+      "endDatum": "2026-03-07",
+      "gast": "Test"
+    },
+    {
+      "id": "u2caigcto",
+      "wohnungId": 0,
+      "startDatum": "2026-02-21",
+      "endDatum": "2026-03-03",
+      "gast": "lll"
+    },
+    {
+      "id": "sow2lmty6",
+      "wohnungId": 3,
+      "startDatum": "2026-04-03",
+      "endDatum": "2026-04-09",
+      "gast": "HUH",
+      "kontakt": "hu@gmail.com"
+    },
+    {
+      "id": "6aqlflkx4",
+      "wohnungId": 2,
+      "startDatum": "2026-04-09",
+      "endDatum": "2026-04-14",
+      "gast": "XXX2",
+      "kontakt": "aaa"
+    },
+    {
+      "id": "irjabh97l",
+      "wohnungId": 2,
+      "startDatum": "2026-04-06",
+      "endDatum": "2026-04-09",
+      "gast": "222",
+      "kontakt": "222"
+    },
+    {
+      "id": "ekhze9xq6",
+      "wohnungId": 2,
+      "startDatum": "2026-04-03",
+      "endDatum": "2026-04-06",
+      "gast": "Blubl",
+      "kontakt": "Blub"
+    },
+    {
+      "id": "gi0tfzvrl",
+      "wohnungId": 1,
+      "startDatum": "2026-04-04",
+      "endDatum": "2026-04-27",
+      "gast": "Pamela",
+      "kontakt": "Pamela@blu.de"
+    },
+    {
+      "id": "g9p3r08o1",
+      "wohnungId": 0,
+      "startDatum": "2026-01-19",
+      "endDatum": "2026-01-25",
+      "gast": "111",
+      "kontakt": "111"
+    }
+  ],
+  "anfragen": []
+}
