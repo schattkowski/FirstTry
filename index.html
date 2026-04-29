@@ -321,6 +321,40 @@
         function pruefeUeberlappung(wId, neuStart, neuEnd, ignoreId = null) { return buchungen.some(b => b.wohnungId === parseInt(wId) && b.id !== ignoreId && neuStart < b.endDatum && neuEnd > b.startDatum); }
         function getZeitstempel() { let j = new Date(); return `${j.getDate()}.${j.getMonth()+1}.${j.getFullYear()} - ${String(j.getHours()).padStart(2,'0')}:${String(j.getMinutes()).padStart(2,'0')}`; }
 
+        // --- NEU: CSV-Hilfsfunktionen ---
+        function parseCSV(text) {
+            let lines = text.trim().split('\n');
+            if (lines.length < 1) return [];
+            let headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
+            let data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                let values = lines[i].split(',').map(v => v.replace(/^"|"$/g, ''));
+                let obj = {};
+                headers.forEach((h, index) => {
+                    let val = values[index] || "";
+                    obj[h] = (h === "wohnungId") ? parseInt(val) : val;
+                });
+                data.push(obj);
+            }
+            return data;
+        }
+
+        function toCSV(data) {
+            if (!data || data.length === 0) return '"id","wohnungId","startDatum","endDatum","gast","kontakt"\n';
+            let headers = ["id", "wohnungId", "startDatum", "endDatum", "gast", "kontakt"];
+            let csv = '"' + headers.join('","') + '"\n';
+            data.forEach(row => {
+                let rowStr = headers.map(h => {
+                    let val = row[h] !== undefined ? row[h] : "";
+                    return '"' + val + '"';
+                }).join(',');
+                csv += rowStr + '\n';
+            });
+            return csv;
+        }
+        // ---------------------------------
+
         // Login / Logout
         async function login() {
             let pwd = prompt("Bitte Admin-Passwort eingeben:");
@@ -332,19 +366,32 @@
         }
         function logout() { istAdmin = false; document.body.className = "mode-gast"; klickAuswahl.aktiv = false; fileHandle = null; aktualisiereSyncStatus(); kalenderRendern(); }
 
-        // Datei-Sync
+        // Datei-Sync (Jetzt für CSV!)
         async function dateiVerbinden() {
             if (!window.showOpenFilePicker) { alert("Dein Browser (z.B. auf dem Handy) blockiert diese Funktion. Nutze den PC für den Admin-Modus."); return; }
             try {
-                [fileHandle] = await window.showOpenFilePicker({ types: [{ description: 'JSON Datei', accept: {'application/json': ['.json']} }], multiple: false });
-                const file = await fileHandle.getFile(); const contents = await file.text(); const geladeneDaten = JSON.parse(contents);
-                if (geladeneDaten.buchungen) {
-                    buchungen = geladeneDaten.buchungen; anfragen = geladeneDaten.anfragen || [];
-                    erstelleBackup("Daten geladen"); await speichern(); 
-                    kalenderRendern(); listenRendern(); aktualisiereSyncStatus(); alert("Verbunden! Automatisches Speichern aktiv.");
+                [fileHandle] = await window.showOpenFilePicker({ types: [{ description: 'CSV Datei', accept: {'text/csv': ['.csv']} }], multiple: false });
+                const file = await fileHandle.getFile(); 
+                const contents = await file.text(); 
+                
+                const geladeneDaten = parseCSV(contents);
+                
+                if (geladeneDaten && geladeneDaten.length > 0) {
+                    buchungen = geladeneDaten;
+                    erstelleBackup("Daten aus CSV geladen"); 
+                    await speichern(); 
+                    kalenderRendern(); listenRendern(); aktualisiereSyncStatus(); 
+                    alert("Verbunden! Automatisches Speichern in CSV aktiv.");
+                } else if (geladeneDaten.length === 0) {
+                     // Falls die CSV noch komplett leer ist
+                    erstelleBackup("Neue, leere CSV geladen"); 
+                    await speichern();
+                    kalenderRendern(); listenRendern(); aktualisiereSyncStatus(); 
+                    alert("Leere CSV verbunden! Automatisches Speichern aktiv.");
                 } else { fileHandle = null; alert("Falsches Format."); }
             } catch (err) { if (err.name !== 'AbortError') alert("Fehler beim Verbinden."); }
         }
+        
         function aktualisiereSyncStatus() {
             const badge = document.getElementById("syncStatus");
             if (fileHandle) { badge.className = "status-badge status-green"; badge.innerHTML = "🟢 Auto-Save aktiv"; } 
@@ -381,14 +428,14 @@
             }
         }
 
-        // Speichern Core
+        // Speichern Core (Jetzt im CSV-Format)
         async function speichern(aktionText = "Änderung") {
             localStorage.setItem("ferienBuchungen", JSON.stringify(buchungen)); localStorage.setItem("ferienAnfragen", JSON.stringify(anfragen));
             erstelleBackup(aktionText);
             if (fileHandle) {
                 try {
-                    const jsonString = JSON.stringify({ buchungen: buchungen, anfragen: anfragen }, null, 2);
-                    const writable = await fileHandle.createWritable(); await writable.write(jsonString); await writable.close();
+                    const csvString = toCSV(buchungen);
+                    const writable = await fileHandle.createWritable(); await writable.write(csvString); await writable.close();
                 } catch (err) { alert("Auto-Save Fehler. Bitte neu verbinden."); fileHandle = null; aktualisiereSyncStatus(); }
             }
         }
