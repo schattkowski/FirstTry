@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Belegungsplan</title>
+    <!-- Supabase Bibliothek einbinden -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* --- GRUND-LAYOUT --- */
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f7f6; color: #333; }
@@ -70,7 +72,6 @@
         .halb-in { background: linear-gradient(to right, #fdfdfd 50%, var(--bg) 50%); color: #333; }
         .wechseltag { background: repeating-linear-gradient(45deg, var(--bg), var(--bg) 10px, rgba(255,255,255,0.4) 10px, rgba(255,255,255,0.4) 20px); color: #fff; text-shadow: 1px 1px 2px black; }
 
-        /* Tooltips (nur bei Hover auf Desktop, auf Touch übernimmt Modal) */
         @media (hover: hover) {
             .belegt:hover::after {
                 content: attr(data-info); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
@@ -95,40 +96,24 @@
         .checkbox-grid label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 5px 0;}
         .checkbox-grid input { width: 18px; height: 18px; margin: 0; }
         
-        /* Status Indikator */
         .status-badge { padding: 8px 12px; border-radius: 15px; font-size: 13px; font-weight: bold; display: inline-flex; align-items: center; gap: 5px; }
         .status-red { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .status-green { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .history-item { padding: 15px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
 
-        /* ========================================================= */
-        /* SMARTPHONE OPTIMIERUNG (Wird automatisch aktiv bei < 768px)*/
-        /* ========================================================= */
         @media (max-width: 768px) {
             body { margin: 10px; }
             .box-container { padding: 15px 10px; }
-            
-            /* Boxen ordnen sich untereinander an */
             .header-controls { flex-direction: column; align-items: stretch; text-align: center; }
             .flex-row { flex-direction: column; align-items: stretch; width: 100%; }
             .navigation-group { flex-wrap: wrap; justify-content: center; }
-            
-            /* Buttons auf Touch-Größe bringen */
             .btn { width: 100%; padding: 14px; font-size: 16px; margin-bottom: 8px;}
             .navigation-group .btn { width: auto; flex-grow: 1; }
             .navigation-group select, .navigation-group input { flex-grow: 2; width: auto; }
-            
-            /* Formulare nutzen volle Breite */
             .form-container { flex-direction: column; align-items: stretch; }
             .form-group { max-width: 100%; width: 100%; }
-            
-            /* Checkboxen im Modal untereinander */
             .checkbox-grid { grid-template-columns: 1fr; }
-            
-            /* Tabellen in der Liste scrollbar lassen */
             .table-wrapper { padding-bottom: 10px; border-bottom: 1px solid #ddd; }
-            
-            /* History Liste anpassen */
             .history-item { flex-direction: column; align-items: flex-start; }
             .history-item .btn { width: 100%; margin-top: 5px; }
         }
@@ -150,13 +135,11 @@
     <!-- DATEISYNCHRONISATION & BACKUPS (Nur Admin) -->
     <div class="box-container admin-only">
         <div style="margin-bottom: 15px;">
-            <strong>Live-Dateisynchronisation:</strong><br>
-            <span style="font-size: 13px; color: #555;">Verbinde dich 1x mit deiner Datei. Danach wird alles automatisch gespeichert!</span>
+            <strong>Datenbank-Verbindung:</strong><br>
+            <span style="font-size: 13px; color: #555;">Die Daten werden live in deiner Supabase Cloud gespeichert.</span>
         </div>
-        
         <div class="flex-row">
-            <div id="syncStatus" class="status-badge status-red" style="flex-grow: 1; justify-content: center;">🔴 Nicht verbunden</div>
-            <button class="btn btn-sync" style="flex-grow: 1;" onclick="dateiVerbinden()">&#128279; Verbinden</button>
+            <div id="syncStatus" class="status-badge status-green" style="flex-grow: 1; justify-content: center;">🟢 Supabase Verbunden</div>
             <button class="btn btn-history" style="flex-grow: 1;" onclick="openHistoryModal()">&#8634; Backups</button>
         </div>
     </div>
@@ -216,31 +199,19 @@
         </div>
     </div>
 
-    <!-- POPUP 1: NEUE BUCHUNG / ANFRAGE -->
+    <!-- POPUPS (Modal) -->
     <div class="modal-overlay" id="bookingModal">
         <div class="modal-content">
             <h3 id="modalTitle">Neue Buchung</h3>
-            <div class="form-group">
-                <label>Anreise:</label> <input type="date" id="modalStart" onchange="updateModalDetails()">
-            </div>
-            <div class="form-group" style="margin-top: 10px;">
-                <label>Abreise:</label> <input type="date" id="modalEnd" onchange="updateModalDetails()">
-            </div>
-            
+            <div class="form-group"><label>Anreise:</label> <input type="date" id="modalStart" onchange="updateModalDetails()"></div>
+            <div class="form-group" style="margin-top: 10px;"><label>Abreise:</label> <input type="date" id="modalEnd" onchange="updateModalDetails()"></div>
             <div class="modal-details" style="margin-top: 15px;">
                 <div id="modalNightsInfo" style="margin-bottom: 10px; font-weight: bold;"></div>
                 <label><strong>Gewünschte Objekte:</strong></label>
                 <div class="checkbox-grid" id="modalApartmentCheckboxes"></div>
             </div>
-
-            <div class="form-group">
-                <label>Name (Vor- und Nachname):</label>
-                <input type="text" id="modalName">
-            </div>
-            <div class="form-group" style="margin-top: 10px; margin-bottom: 20px;">
-                <label>Kontakt (E-Mail oder Telefon):</label>
-                <input type="text" id="modalKontakt" placeholder="Pflicht für Gäste">
-            </div>
+            <div class="form-group"><label>Name (Vor- und Nachname):</label><input type="text" id="modalName"></div>
+            <div class="form-group" style="margin-top: 10px; margin-bottom: 20px;"><label>Kontakt (E-Mail oder Telefon):</label><input type="text" id="modalKontakt" placeholder="Pflicht für Gäste"></div>
             <div class="flex-row">
                 <button class="btn" style="background-color: #95a5a6; flex: 1;" onclick="closeModal()">Abbrechen</button>
                 <button class="btn btn-accept" style="flex: 1;" onclick="submitModal()">Absenden</button>
@@ -248,7 +219,6 @@
         </div>
     </div>
 
-    <!-- POPUP 2: BUCHUNG BEARBEITEN (Nur Admin) -->
     <div class="modal-overlay" id="editModal">
         <div class="modal-content">
             <h3>Buchung bearbeiten</h3>
@@ -259,18 +229,10 @@
                     <option value="2">App2</option> <option value="3">App3</option> <option value="4">App4</option>
                 </select>
             </div>
-            <div class="form-group" style="margin-top: 10px;">
-                <label>Anreise:</label> <input type="date" id="editStart">
-            </div>
-            <div class="form-group" style="margin-top: 10px;">
-                <label>Abreise:</label> <input type="date" id="editEnd">
-            </div>
-            <div class="form-group" style="margin-top: 10px;">
-                <label>Name:</label> <input type="text" id="editName">
-            </div>
-            <div class="form-group" style="margin-top: 10px; margin-bottom: 20px;">
-                <label>Kontakt:</label> <input type="text" id="editKontakt">
-            </div>
+            <div class="form-group" style="margin-top: 10px;"><label>Anreise:</label> <input type="date" id="editStart"></div>
+            <div class="form-group" style="margin-top: 10px;"><label>Abreise:</label> <input type="date" id="editEnd"></div>
+            <div class="form-group" style="margin-top: 10px;"><label>Name:</label> <input type="text" id="editName"></div>
+            <div class="form-group" style="margin-top: 10px; margin-bottom: 20px;"><label>Kontakt:</label> <input type="text" id="editKontakt"></div>
             <div class="flex-row">
                 <button class="btn delete-btn" style="flex: 1;" onclick="deleteFromEditModal()">Löschen</button>
                 <button class="btn" style="background-color: #95a5a6; flex: 1;" onclick="closeEditModal()">Abbruch</button>
@@ -279,19 +241,22 @@
         </div>
     </div>
 
-    <!-- POPUP 3: HISTORIE / BACKUPS -->
     <div class="modal-overlay" id="historyModal">
         <div class="modal-content wide">
-            <h3>Historie & Backups</h3>
-            <p style="font-size: 14px; color: #555;">Hier werden die letzten Änderungen gesichert. Du kannst alte Stände wiederherstellen.</p>
-            <div id="historyList" style="max-height: 50vh; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 15px;">
-            </div>
+            <h3>Historie & Backups (Lokal)</h3>
+            <p style="font-size: 14px; color: #555;">Lokale Snapshots der letzten Aktionen.</p>
+            <div id="historyList" style="max-height: 50vh; overflow-y: auto; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 15px;"></div>
             <button class="btn" style="background-color: #95a5a6; width: 100%;" onclick="closeHistoryModal()">Schließen</button>
         </div>
     </div>
 
     <!-- LOGIK & SKRIPTE -->
     <script>
+        // SUPABASE SETUP
+        const supabaseUrl = 'https://dktoaovetyfqvkrmgprf.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrdG9hb3ZldHlmcXZrcm1ncHJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NTE1MjIsImV4cCI6MjA5MzAyNzUyMn0.A1OWtEk5MNgEGiSQMsLXFUCKvKTv2PnEEqH2yl4t2bQ';
+        const _supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
         const ADMIN_PASSWORT_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; 
         const wohnungen = ["Haus", "App1", "App2", "App3", "App4"];
         const monatsNamen = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
@@ -299,16 +264,27 @@
         let aktuellesDatum = new Date(); let aktuellerMonat = aktuellesDatum.getMonth(); let aktuellesJahr = aktuellesDatum.getFullYear();
         let ansichtModus = 'monat'; let istAdmin = false; 
 
-        let buchungen = JSON.parse(localStorage.getItem("ferienBuchungen")) || [];
-        let anfragen = JSON.parse(localStorage.getItem("ferienAnfragen")) || [];
+        // Arrays lokal zur Darstellung
+        let buchungen = [];
+        let anfragen = [];
         let backupHistorie = JSON.parse(localStorage.getItem("ferienHistorie")) || []; 
-        let fileHandle = null; 
-
-        buchungen.forEach(b => { if(!b.id) b.id = Math.random().toString(36).substr(2, 9); });
-        anfragen.forEach(a => { if(!a.id) a.id = Math.random().toString(36).substr(2, 9); });
 
         let klickAuswahl = { aktiv: false, wohnungId: null, startDatum: null, tdElement: null };
         let modalWohnungId = null; let editingBuchungId = null; 
+
+        // Daten beim Start aus Supabase laden
+        async function datenInitialLaden() {
+            const { data: bData, error: bErr } = await _supabase.from('buchungen').select('*');
+            if (bData) buchungen = bData;
+            
+            const { data: aData, error: aErr } = await _supabase.from('anfragen').select('*');
+            if (aData) anfragen = aData;
+            
+            kalenderRendern();
+            if(istAdmin) listenRendern();
+        }
+
+        datenInitialLaden(); // Startet den Ladevorgang
 
         // Hilfsfunktionen
         async function sha256(message) {
@@ -321,40 +297,6 @@
         function pruefeUeberlappung(wId, neuStart, neuEnd, ignoreId = null) { return buchungen.some(b => b.wohnungId === parseInt(wId) && b.id !== ignoreId && neuStart < b.endDatum && neuEnd > b.startDatum); }
         function getZeitstempel() { let j = new Date(); return `${j.getDate()}.${j.getMonth()+1}.${j.getFullYear()} - ${String(j.getHours()).padStart(2,'0')}:${String(j.getMinutes()).padStart(2,'0')}`; }
 
-        // --- NEU: CSV-Hilfsfunktionen ---
-        function parseCSV(text) {
-            let lines = text.trim().split('\n');
-            if (lines.length < 1) return [];
-            let headers = lines[0].split(',').map(h => h.replace(/^"|"$/g, '').trim());
-            let data = [];
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                let values = lines[i].split(',').map(v => v.replace(/^"|"$/g, ''));
-                let obj = {};
-                headers.forEach((h, index) => {
-                    let val = values[index] || "";
-                    obj[h] = (h === "wohnungId") ? parseInt(val) : val;
-                });
-                data.push(obj);
-            }
-            return data;
-        }
-
-        function toCSV(data) {
-            if (!data || data.length === 0) return '"id","wohnungId","startDatum","endDatum","gast","kontakt"\n';
-            let headers = ["id", "wohnungId", "startDatum", "endDatum", "gast", "kontakt"];
-            let csv = '"' + headers.join('","') + '"\n';
-            data.forEach(row => {
-                let rowStr = headers.map(h => {
-                    let val = row[h] !== undefined ? row[h] : "";
-                    return '"' + val + '"';
-                }).join(',');
-                csv += rowStr + '\n';
-            });
-            return csv;
-        }
-        // ---------------------------------
-
         // Login / Logout
         async function login() {
             let pwd = prompt("Bitte Admin-Passwort eingeben:");
@@ -364,46 +306,15 @@
                 kalenderRendern(); listenRendern();
             } else { alert("Falsches Passwort!"); }
         }
-        function logout() { istAdmin = false; document.body.className = "mode-gast"; klickAuswahl.aktiv = false; fileHandle = null; aktualisiereSyncStatus(); kalenderRendern(); }
+        function logout() { istAdmin = false; document.body.className = "mode-gast"; klickAuswahl.aktiv = false; kalenderRendern(); }
 
-        // Datei-Sync (Jetzt für CSV!)
-        async function dateiVerbinden() {
-            if (!window.showOpenFilePicker) { alert("Dein Browser (z.B. auf dem Handy) blockiert diese Funktion. Nutze den PC für den Admin-Modus."); return; }
-            try {
-                [fileHandle] = await window.showOpenFilePicker({ types: [{ description: 'CSV Datei', accept: {'text/csv': ['.csv']} }], multiple: false });
-                const file = await fileHandle.getFile(); 
-                const contents = await file.text(); 
-                
-                const geladeneDaten = parseCSV(contents);
-                
-                if (geladeneDaten && geladeneDaten.length > 0) {
-                    buchungen = geladeneDaten;
-                    erstelleBackup("Daten aus CSV geladen"); 
-                    await speichern(); 
-                    kalenderRendern(); listenRendern(); aktualisiereSyncStatus(); 
-                    alert("Verbunden! Automatisches Speichern in CSV aktiv.");
-                } else if (geladeneDaten.length === 0) {
-                     // Falls die CSV noch komplett leer ist
-                    erstelleBackup("Neue, leere CSV geladen"); 
-                    await speichern();
-                    kalenderRendern(); listenRendern(); aktualisiereSyncStatus(); 
-                    alert("Leere CSV verbunden! Automatisches Speichern aktiv.");
-                } else { fileHandle = null; alert("Falsches Format."); }
-            } catch (err) { if (err.name !== 'AbortError') alert("Fehler beim Verbinden."); }
-        }
-        
-        function aktualisiereSyncStatus() {
-            const badge = document.getElementById("syncStatus");
-            if (fileHandle) { badge.className = "status-badge status-green"; badge.innerHTML = "🟢 Auto-Save aktiv"; } 
-            else { badge.className = "status-badge status-red"; badge.innerHTML = "🔴 Nicht verbunden"; }
-        }
-
-        // Backup
+        // Backup lokal speichern (für Notfälle)
         function erstelleBackup(aktionText) {
             backupHistorie.unshift({ zeit: getZeitstempel(), aktion: aktionText, daten: JSON.stringify({ buchungen: buchungen, anfragen: anfragen }) });
             if (backupHistorie.length > 15) backupHistorie = backupHistorie.slice(0, 15);
             localStorage.setItem("ferienHistorie", JSON.stringify(backupHistorie));
         }
+        
         function openHistoryModal() {
             const listDiv = document.getElementById("historyList"); listDiv.innerHTML = "";
             if (backupHistorie.length === 0) listDiv.innerHTML = "<div style='padding: 15px;'>Keine Backups.</div>";
@@ -412,33 +323,12 @@
                     let info = JSON.parse(backup.daten);
                     listDiv.innerHTML += `<div class="history-item">
                             <div><strong>${backup.zeit}</strong><br><span style="font-size: 12px; color: #7f8c8d;">${backup.aktion} (${info.buchungen.length} Buchungen)</span></div>
-                            <button class="btn btn-accept" style="margin:0;" onclick="wiederherstellenBackup(${index})">&#8634; Laden</button>
                         </div>`;
                 });
             }
             document.getElementById("historyModal").style.display = "flex";
         }
         function closeHistoryModal() { document.getElementById("historyModal").style.display = "none"; }
-        async function wiederherstellenBackup(index) {
-            if (confirm("Alten Stand laden? Der aktuelle Kalender wird überschrieben!")) {
-                let backupDaten = JSON.parse(backupHistorie[index].daten);
-                erstelleBackup("Rettungsanker vor Wiederherstellung");
-                buchungen = backupDaten.buchungen; anfragen = backupDaten.anfragen;
-                await speichern("Wiederherstellung"); kalenderRendern(); listenRendern(); closeHistoryModal(); alert("Wiederhergestellt!");
-            }
-        }
-
-        // Speichern Core (Jetzt im CSV-Format)
-        async function speichern(aktionText = "Änderung") {
-            localStorage.setItem("ferienBuchungen", JSON.stringify(buchungen)); localStorage.setItem("ferienAnfragen", JSON.stringify(anfragen));
-            erstelleBackup(aktionText);
-            if (fileHandle) {
-                try {
-                    const csvString = toCSV(buchungen);
-                    const writable = await fileHandle.createWritable(); await writable.write(csvString); await writable.close();
-                } catch (err) { alert("Auto-Save Fehler. Bitte neu verbinden."); fileHandle = null; aktualisiereSyncStatus(); }
-            }
-        }
 
         // Popups & Formulare
         function openModal(wIndex, start, end) {
@@ -474,13 +364,21 @@
 
             for (let wId of wohnungsIds) { if (pruefeUeberlappung(wId, start, end)) { alert(`"${wohnungen[wId]}" ist belegt!`); return; } }
 
-            wohnungsIds.forEach(wId => {
-                let eintrag = { id: Math.random().toString(36).substr(2, 9), wohnungId: wId, startDatum: start, endDatum: end, gast: gastName, kontakt: kontakt || "-" };
-                if (istAdmin) buchungen.push(eintrag); else anfragen.push(eintrag);
+            let neueEintraege = wohnungsIds.map(wId => {
+                return { id: Math.random().toString(36).substr(2, 9), wohnungId: wId, startDatum: start, endDatum: end, gast: gastName, kontakt: kontakt || "-" };
             });
-            
-            if (istAdmin) { await speichern("Neue Buchung: " + gastName); kalenderRendern(); listenRendern(); } 
-            else { await speichern("Neue Anfrage: " + gastName); alert("Anfrage gesendet!"); }
+
+            if (istAdmin) { 
+                buchungen.push(...neueEintraege);
+                await _supabase.from('buchungen').insert(neueEintraege);
+                erstelleBackup("Neue Buchung: " + gastName); 
+                kalenderRendern(); listenRendern(); 
+            } else { 
+                anfragen.push(...neueEintraege);
+                await _supabase.from('anfragen').insert(neueEintraege);
+                erstelleBackup("Neue Anfrage: " + gastName); 
+                alert("Anfrage gesendet!"); 
+            }
             closeModal();
         }
 
@@ -492,6 +390,7 @@
             document.getElementById("editModal").style.display = "flex";
         }
         function closeEditModal() { document.getElementById("editModal").style.display = "none"; editingBuchungId = null; }
+        
         async function saveEditModal() {
             let wId = document.getElementById("editWohnung").value; let start = document.getElementById("editStart").value; let end = document.getElementById("editEnd").value;
             let name = document.getElementById("editName").value.trim(); let kontakt = document.getElementById("editKontakt").value.trim();
@@ -504,14 +403,20 @@
             if(index !== -1) {
                 buchungen[index].wohnungId = parseInt(wId); buchungen[index].startDatum = start; buchungen[index].endDatum = end;
                 buchungen[index].gast = name; buchungen[index].kontakt = kontakt || "-";
-                await speichern("Bearbeitet: " + name); kalenderRendern(); listenRendern(); closeEditModal();
+                
+                await _supabase.from('buchungen').update({
+                    wohnungId: parseInt(wId), startDatum: start, endDatum: end, gast: name, kontakt: kontakt || "-"
+                }).eq('id', editingBuchungId);
+
+                erstelleBackup("Bearbeitet: " + name); kalenderRendern(); listenRendern(); closeEditModal();
             }
         }
         async function deleteFromEditModal() {
             let b = buchungen.find(x => x.id === editingBuchungId);
             if(confirm("Wirklich löschen?")) {
-                buchungen = buchungen.filter(b => b.id !== editingBuchungId);
-                await speichern("Gelöscht: " + (b?b.gast:"")); kalenderRendern(); listenRendern(); closeEditModal();
+                buchungen = buchungen.filter(x => x.id !== editingBuchungId);
+                await _supabase.from('buchungen').delete().eq('id', editingBuchungId);
+                erstelleBackup("Gelöscht: " + (b?b.gast:"")); kalenderRendern(); listenRendern(); closeEditModal();
             }
         }
 
@@ -573,7 +478,6 @@
                                 if (tagesBuchungen.length === 1 && (isCheckOut || isCheckIn) && !isMiddle) { tdTag.onclick = (e) => zelleKlick(wIndex, tagString, e.target); }
                             }
 
-                            // Info für Hover (am PC)
                             let hoverText = istAdmin ? tagesBuchungen.map(b => `${b.gast} | ${formatDatum(b.startDatum)} - ${formatDatum(b.endDatum)}`).join('\n---\n') : (isWechsel ? "Wechseltag" : "Belegt");
                             tdTag.setAttribute("data-info", hoverText);
                         }
@@ -598,16 +502,31 @@
             }
         }
 
-        // Listen
+        // Listenverwaltung
         async function anfrageAkzeptieren(id) {
             let anfrage = anfragen.find(a => a.id === id);
             if(anfrage) {
                 if(pruefeUeberlappung(anfrage.wohnungId, anfrage.startDatum, anfrage.endDatum)) { alert("Zeitraum belegt!"); return; }
-                buchungen.push(anfrage); anfragen = anfragen.filter(a => a.id !== id);
-                await speichern("Akzeptiert: " + anfrage.gast); kalenderRendern(); listenRendern();
+                
+                // Lokal verschieben
+                buchungen.push(anfrage); 
+                anfragen = anfragen.filter(a => a.id !== id);
+                
+                // In Supabase verschieben
+                await _supabase.from('anfragen').delete().eq('id', id);
+                await _supabase.from('buchungen').insert([anfrage]);
+
+                erstelleBackup("Akzeptiert: " + anfrage.gast); kalenderRendern(); listenRendern();
             }
         }
-        async function anfrageAblehnen(id) { if(confirm("Anfrage löschen?")) { anfragen = anfragen.filter(a => a.id !== id); await speichern("Anfrage gelöscht"); listenRendern(); } }
+        
+        async function anfrageAblehnen(id) { 
+            if(confirm("Anfrage löschen?")) { 
+                anfragen = anfragen.filter(a => a.id !== id); 
+                await _supabase.from('anfragen').delete().eq('id', id);
+                erstelleBackup("Anfrage gelöscht"); listenRendern(); 
+            } 
+        }
         
         function filterJahreAktualisieren() {
             let jahre = new Set([aktuellesJahr.toString()]); buchungen.forEach(b => { jahre.add(b.startDatum.substring(0,4)); jahre.add(b.endDatum.substring(0,4)); });
@@ -637,8 +556,6 @@
             });
             if(listenBody.innerHTML === "") listenBody.innerHTML = "<tr><td colspan='6' style='padding:15px;'>Keine Buchungen.</td></tr>";
         }
-
-        kalenderRendern();
     </script>
 </body>
 </html>
