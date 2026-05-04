@@ -140,7 +140,7 @@
         </div>
         <div class="flex-row">
             <div id="syncStatus" class="status-badge status-green" style="flex-grow: 1; justify-content: center;">🟢 Supabase Verbunden</div>
-            <button class="btn btn-history" style="flex-grow: 1;" onclick="openHistoryModal()">&#8634; Backups</button>
+            <button class="btn btn-history" style="flex-grow: 1; background-color: #27ae60;" onclick="exportiereDatenCSV()">&#128190; CSV Backup laden</button>
         </div>
     </div>
 
@@ -556,6 +556,46 @@
             });
             if(listenBody.innerHTML === "") listenBody.innerHTML = "<tr><td colspan='6' style='padding:15px;'>Keine Buchungen.</td></tr>";
         }
+                // --- NEU: CSV EXPORT FUNKTION ---
+        function exportiereDatenCSV() {
+            if (buchungen.length === 0 && anfragen.length === 0) {
+                alert("Keine Daten zum Exportieren vorhanden.");
+                return;
+            }
+
+            // CSV Header (Spaltenüberschriften)
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF für korrekte Excel-Umlaute
+            csvContent += "Kategorie,ID,Objekt,Startdatum,Enddatum,Gast,Kontakt\n";
+
+            // Hilfsfunktion, um Texte sicher zu machen (falls jemand ein Komma in den Namen tippt)
+            const escapeCSV = (text) => `"${String(text).replace(/"/g, '""')}"`;
+
+            // 1. Buchungen durchgehen
+            buchungen.forEach(b => {
+                let objektName = wohnungen[b.wohnungId] || "Unbekannt";
+                csvContent += `Buchung,${b.id},${escapeCSV(objektName)},${formatDatum(b.startDatum)},${formatDatum(b.endDatum)},${escapeCSV(b.gast)},${escapeCSV(b.kontakt)}\n`;
+            });
+
+            // 2. Anfragen durchgehen
+            anfragen.forEach(a => {
+                let objektName = wohnungen[a.wohnungId] || "Unbekannt";
+                csvContent += `Anfrage,${a.id},${escapeCSV(objektName)},${formatDatum(a.startDatum)},${formatDatum(a.endDatum)},${escapeCSV(a.gast)},${escapeCSV(a.kontakt)}\n`;
+            });
+
+            // Download anstoßen
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            
+            // Dateiname mit heutigem Datum
+            let heute = new Date().toISOString().split('T')[0];
+            link.setAttribute("download", `Belegungsplan_Backup_${heute}.csv`);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
     </script>
 </body>
 </html>
