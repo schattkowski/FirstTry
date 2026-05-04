@@ -140,7 +140,10 @@
         </div>
         <div class="flex-row">
             <div id="syncStatus" class="status-badge status-green" style="flex-grow: 1; justify-content: center;">🟢 Supabase Verbunden</div>
-            <button class="btn btn-history" style="flex-grow: 1; background-color: #27ae60;" onclick="exportiereDatenCSV()">&#128190; CSV Backup laden</button>
+            <button class="btn btn-history" style="flex-grow: 1; background-color: #27ae60;" onclick="exportiereDatenCSV()">&#128190; CSV Speichern</button>
+            <button class="btn btn-history" style="flex-grow: 1; background-color: #c0392b;" onclick="importiereDatenCSV()">&#128194; CSV Laden</button>
+            <!-- Verstecktes Input-Feld für den Datei-Upload -->
+            <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="verarbeiteCSVImport(event)">
         </div>
     </div>
 
@@ -595,6 +598,112 @@
             link.click();
             document.body.removeChild(link);
         }
+                // --- NEU: CSV IMPORT (LADEN) FUNKTIONEN ---
+        function importiereDatenCSV() {
+            if (confirm("ACHTUNG: Beim Laden werden alle aktuellen Buchungen und Anfragen überschrieben! Fortfahren?")) {
+                document.getElementById('csvFileInput').click(); // Öffnet das Datei-Auswahlfenster
+            }
+        }
+
+        async function verarbeiteCSVImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                
+                let neueBuchungen = [];
+                let neueAnfragen = [];
+
+                // Ab Zeile 2 einlesen (Zeile 1 ist der Header)
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // Eigenes CSV-Parsing, um eventuelle Kommas in Namen zu ignorieren
+                    const values = [];
+                    let insideQuote = false;
+                    let currentValue = "";
+                    for (let char of line) {
+                        if (char === '"') {
+                            insideQuote = !insideQuote;
+                        } else if (char === ',' && !insideQuote) {
+                            values.push(currentValue);
+                            currentValue = "";
+                        } else {
+                            currentValue += char;
+                        }
+                    }
+                    values.push(currentValue);
+
+                    // Nur vollständige Zeilen verarbeiten
+                    if (values.length >= 7) {
+                        const kategorie = values[0];
+                        const id = values[1];
+                        const objekt = values[2];
+                        const startDatumDDMMYYYY = values[3];
+                        const endDatumDDMMYYYY = values[4];
+                        const gast = values[5];
+                        const kontakt = values[6];
+
+                        const wohnungId = wohnungen.indexOf(objekt);
+                        if (wohnungId === -1) continue;
+
+                        // Datum von TT.MM.JJJJ zurück zu JJJJ-MM-TT wandeln
+                        const startParts = startDatumDDMMYYYY.split('.');
+                        const endParts = endDatumDDMMYYYY.split('.');
+                        if(startParts.length !== 3 || endParts.length !== 3) continue;
+
+                        const startDatum = `${startParts[2]}-${startParts[1]}-${startParts[0]}`;
+                        const endDatum = `${endParts[2]}-${endParts[1]}-${endParts[0]}`;
+
+                        const eintrag = {
+                            id: id || Math.random().toString(36).substr(2, 9),
+                            wohnungId: parseInt(wohnungId),
+                            startDatum: startDatum,
+                            endDatum: endDatum,
+                            gast: gast,
+                            kontakt: kontakt || "-"
+                        };
+
+                        if (kategorie === 'Buchung') {
+                            neueBuchungen.push(eintrag);
+                        } else if (kategorie === 'Anfrage') {
+                            neueAnfragen.push(eintrag);
+                        }
+                    }
+                }
+
+                // 1. Supabase komplett leeren (mit Dummy-Filter 'neq', da Supabase Löschen ohne Filter blockiert)
+                await _supabase.from('buchungen').delete().neq('id', 'LADE_CSV_DELETE_ALL');
+                await _supabase.from('anfragen').delete().neq('id', 'LADE_CSV_DELETE_ALL');
+
+                // 2. Neue Daten in Supabase einfügen
+                if (neueBuchungen.length > 0) {
+                    await _supabase.from('buchungen').insert(neueBuchungen);
+                }
+                if (neueAnfragen.length > 0) {
+                    await _supabase.from('anfragen').insert(neueAnfragen);
+                }
+
+                // 3. Lokale Listen für die aktuelle Anzeige aktualisieren
+                buchungen = neueBuchungen;
+                anfragen = neueAnfragen;
+
+                // 4. Benutzeroberfläche neu zeichnen
+                kalenderRendern();
+                if (istAdmin) listenRendern();
+
+                alert("Daten wurden erfolgreich wiederhergestellt!");
+                document.getElementById('csvFileInput').value = ""; // Feld für nächsten Upload leeren
+            };
+            
+            // Datei als Text einlesen
+            reader.readAsText(file);
+        }
+
 
     </script>
 </body>
