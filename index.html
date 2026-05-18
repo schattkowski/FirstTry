@@ -66,12 +66,10 @@
         .farbe-w0 { --bg: #3498db; } .farbe-w1 { --bg: #e67e22; }
         .farbe-w2 { --bg: #9b59b6; } .farbe-w3 { --bg: #27ae60; }
         .farbe-w4 { --bg: #c0392b; }
-
         .voll-belegt { background-color: var(--bg); color: white; }
         .halb-out { background: linear-gradient(to right, var(--bg) 50%, #fdfdfd 50%); color: #333; }
         .halb-in { background: linear-gradient(to right, #fdfdfd 50%, var(--bg) 50%); color: #333; }
         .wechseltag { background: repeating-linear-gradient(45deg, var(--bg), var(--bg) 10px, rgba(255,255,255,0.4) 10px, rgba(255,255,255,0.4) 20px); color: #fff; text-shadow: 1px 1px 2px black; }
-
         @media (hover: hover) {
             .belegt:hover::after {
                 content: attr(data-info); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
@@ -79,13 +77,12 @@
                 white-space: pre; text-align: center; font-size: 12px; z-index: 40; margin-bottom: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             }
         }
-
         .listen-tabelle th { background-color: #7f8c8d; position: static; color: white;}
         
         .modus-banner { text-align: center; padding: 10px; font-weight: bold; margin-bottom: 20px; border-radius: 8px;}
         body.mode-gast .modus-banner { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
         body.mode-admin .modus-banner { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-
+        
         /* --- MODALS (POP-UPS) --- */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; padding: 10px; box-sizing: border-box;}
         .modal-content { background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; max-height: 90vh; overflow-y: auto; box-shadow: 0 5px 15px rgba(0,0,0,0.3); box-sizing: border-box;}
@@ -100,7 +97,7 @@
         .status-red { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .status-green { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .history-item { padding: 15px 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
-
+        
         @media (max-width: 768px) {
             body { margin: 10px; }
             .box-container { padding: 15px 10px; }
@@ -120,7 +117,6 @@
     </style>
 </head>
 <body class="mode-gast">
-
     <div class="header-controls">
         <h1>Belegungsplan</h1>
         <div style="width: 100%; max-width: 300px; margin: 0 auto;">
@@ -128,10 +124,10 @@
             <button class="btn btn-login admin-only" onclick="logout()">&#128275; Logout (Gast-Modus)</button>
         </div>
     </div>
-
+    
     <div class="modus-banner gast-only">Gäste-Ansicht: Klicke auf freie Tage im Kalender, um eine Anfrage zu stellen!</div>
     <div class="modus-banner admin-only">Admin-Ansicht: Du hast volle Kontrolle. Klicke auf Buchungen zum Bearbeiten.</div>
-
+    
     <!-- DATEISYNCHRONISATION & BACKUPS (Nur Admin) -->
     <div class="box-container admin-only">
         <div style="margin-bottom: 15px;">
@@ -146,7 +142,7 @@
             <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="verarbeiteCSVImport(event)">
         </div>
     </div>
-
+    
     <!-- KALENDER STEUERUNG -->
     <div class="box-container header-controls">
         <button class="btn" style="background-color: #8e44ad; color: white; margin-bottom: 0;" onclick="ansichtWechseln()">Ansicht: <strong id="ansichtText">Monat</strong></button>
@@ -173,7 +169,7 @@
             <tbody id="kalenderBody"></tbody>
         </table>
     </div>
-
+    
     <!-- ANFRAGEN LISTE (Nur Admin) -->
     <div class="box-container admin-only" id="anfragenContainer">
         <h3 style="color: #e67e22; margin-top:0;">&#9203; Offene Anfragen</h3>
@@ -184,7 +180,7 @@
             </table>
         </div>
     </div>
-
+    
     <!-- ALLE BUCHUNGEN LISTE (Nur Admin) -->
     <div class="box-container admin-only">
         <div class="header-controls" style="margin-bottom: 15px;">
@@ -201,7 +197,7 @@
             </table>
         </div>
     </div>
-
+    
     <!-- POPUPS (Modal) -->
     <div class="modal-overlay" id="bookingModal">
         <div class="modal-content">
@@ -221,7 +217,7 @@
             </div>
         </div>
     </div>
-
+    
     <div class="modal-overlay" id="editModal">
         <div class="modal-content">
             <h3>Buchung bearbeiten</h3>
@@ -243,7 +239,7 @@
             </div>
         </div>
     </div>
-
+    
     <div class="modal-overlay" id="historyModal">
         <div class="modal-content wide">
             <h3>Historie & Backups (Lokal)</h3>
@@ -253,39 +249,79 @@
         </div>
     </div>
 
+    <!-- KRITISCHER DATENBANK-FEHLER (Sperrt die Seite) -->
+    <div class="modal-overlay" id="dbErrorOverlay" style="z-index: 9999; background-color: rgba(0,0,0,0.85);">
+        <div class="modal-content" style="background-color: #e74c3c; color: white; text-align: center; border: 2px solid #c0392b;">
+            <h2 style="color: white; margin-top: 0; font-size: 24px;">⚠️ Systemfehler</h2>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+                Die Verbindung zur Datenbank ist aktuell gestört.<br>
+                Die Website wurde sicherheitshalber gesperrt.
+            </p>
+            <p style="font-size: 14px; opacity: 0.9;">Bitte lade die Seite in ein paar Minuten neu.</p>
+        </div>
+    </div>
+
     <!-- LOGIK & SKRIPTE -->
     <script>
         // SUPABASE SETUP
-        const supabaseUrl = 'https://dktoaovetyfqvkrmgprf.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrdG9hb3ZldHlmcXZrcm1ncHJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NTE1MjIsImV4cCI6MjA5MzAyNzUyMn0.A1OWtEk5MNgEGiSQMsLXFUCKvKTv2PnEEqH2yl4t2bQ';
+    	const supabaseUrl = 'https://dktoaovetyfqvkrmgprf.supabase.co';
+	    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrdG9hb3ZldHlmcXZrcm1ncHJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0NTE1MjIsImV4cCI6MjA5MzAyNzUyMn0.A1OWtEk5MNgEGiSQMsLXFUCKvKTv2PnEEqH2yl4t2bQ';
         const _supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
         const ADMIN_PASSWORT_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; 
+        
         const wohnungen = ["Haus", "App1", "App2", "App3", "App4"];
         const monatsNamen = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
         
         let aktuellesDatum = new Date(); let aktuellerMonat = aktuellesDatum.getMonth(); let aktuellesJahr = aktuellesDatum.getFullYear();
         let ansichtModus = 'monat'; let istAdmin = false; 
-
+        
         // Arrays lokal zur Darstellung
         let buchungen = [];
         let anfragen = [];
         let backupHistorie = JSON.parse(localStorage.getItem("ferienHistorie")) || []; 
-
         let klickAuswahl = { aktiv: false, wohnungId: null, startDatum: null, tdElement: null };
         let modalWohnungId = null; let editingBuchungId = null; 
 
-        // Daten beim Start aus Supabase laden
+        // Daten beim Start aus Supabase laden (mit sofortiger Fehlerprüfung)
         async function datenInitialLaden() {
-            const { data: bData, error: bErr } = await _supabase.from('buchungen').select('*');
-            if (bData) buchungen = bData;
-            
-            const { data: aData, error: aErr } = await _supabase.from('anfragen').select('*');
-            if (aData) anfragen = aData;
-            
-            kalenderRendern();
-            if(istAdmin) listenRendern();
+            // 1. Check: Hat das Gerät überhaupt Internet?
+            if (!navigator.onLine) {
+                zeigeDatenbankFehler();
+                return; // Bricht sofort ab
+            }
+
+            // 2. Eigener Timeout: Nach 8 Sekunden (8000 Millisekunden) Fehlermeldung erzwingen
+            let timeoutTimer = setTimeout(() => {
+                console.error("Timeout: Datenbank hat nach 8 Sekunden nicht geantwortet.");
+                zeigeDatenbankFehler();
+            }, 2000);
+
+            try {
+                // Buchungen laden
+                const { data: bData, error: bErr } = await _supabase.from('buchungen').select('*');
+                if (bErr) throw new Error("Supabase Fehler: Buchungen konnten nicht geladen werden.");
+                if (bData) buchungen = bData;
+                
+                // Anfragen laden
+                const { data: aData, error: aErr } = await _supabase.from('anfragen').select('*');
+                if (aErr) throw new Error("Supabase Fehler: Anfragen konnten nicht geladen werden.");
+                if (aData) anfragen = aData;
+                
+                // Wenn alles rechtzeitig und erfolgreich war -> Timer abbrechen!
+                clearTimeout(timeoutTimer);
+
+                // Kalender rendern
+                kalenderRendern();
+                if(istAdmin) listenRendern();
+
+            } catch (err) {
+                // Bei einem sofortigen Supabase-Fehler den Timer auch stoppen
+                clearTimeout(timeoutTimer); 
+                console.error(err.message);
+                zeigeDatenbankFehler();
+            }
         }
+        datenInitialLaden(); // Startet den Ladevorgang
 
         datenInitialLaden(); // Startet den Ladevorgang
 
@@ -299,6 +335,18 @@
         function formatDatum(datumStr) { return datumStr.split('-').reverse().join('.'); }
         function pruefeUeberlappung(wId, neuStart, neuEnd, ignoreId = null) { return buchungen.some(b => b.wohnungId === parseInt(wId) && b.id !== ignoreId && neuStart < b.endDatum && neuEnd > b.startDatum); }
         function getZeitstempel() { let j = new Date(); return `${j.getDate()}.${j.getMonth()+1}.${j.getFullYear()} - ${String(j.getHours()).padStart(2,'0')}:${String(j.getMinutes()).padStart(2,'0')}`; }
+        
+        function zeigeDatenbankFehler() {
+            document.getElementById("dbErrorOverlay").style.display = "flex";
+            document.body.style.overflow = "hidden"; // Verhindert Scrollen im Hintergrund
+            
+            // Falls der Admin eingeloggt ist, den Status-Button oben aktualisieren
+            let syncStatus = document.getElementById("syncStatus");
+            if(syncStatus) {
+                syncStatus.className = "status-badge status-red";
+                syncStatus.innerHTML = "🔴 Verbindung gestört";
+            }
+        }
 
         // Login / Logout
         async function login() {
@@ -345,6 +393,7 @@
             updateModalDetails(); document.getElementById("modalName").value = ""; document.getElementById("modalKontakt").value = "";
             document.getElementById("bookingModal").style.display = "flex";
         }
+        
         function updateModalDetails() {
             let start = document.getElementById("modalStart").value; let end = document.getElementById("modalEnd").value;
             let infoDiv = document.getElementById("modalNightsInfo");
@@ -356,7 +405,6 @@
         async function submitModal() {
             let start = document.getElementById("modalStart").value; let end = document.getElementById("modalEnd").value;
             let gastName = document.getElementById("modalName").value.trim(); let kontakt = document.getElementById("modalKontakt").value.trim();
-
             if (!start || !end || start >= end) { alert("Bitte prüfe das Datum."); return; }
             if (gastName === "") { alert("Name fehlt."); return; }
             if (!istAdmin && kontakt === "") { alert("Kontakt fehlt."); return; }
@@ -364,25 +412,31 @@
             let ausgewaehlteCbs = document.querySelectorAll(".multi-wohnung-cb:checked");
             if (ausgewaehlteCbs.length === 0) { alert("Bitte Objekt wählen."); return; }
             let wohnungsIds = Array.from(ausgewaehlteCbs).map(cb => parseInt(cb.value));
-
+            
             for (let wId of wohnungsIds) { if (pruefeUeberlappung(wId, start, end)) { alert(`"${wohnungen[wId]}" ist belegt!`); return; } }
-
             let neueEintraege = wohnungsIds.map(wId => {
                 return { id: Math.random().toString(36).substr(2, 9), wohnungId: wId, startDatum: start, endDatum: end, gast: gastName, kontakt: kontakt || "-" };
             });
-
-            if (istAdmin) { 
-                buchungen.push(...neueEintraege);
-                await _supabase.from('buchungen').insert(neueEintraege);
-                erstelleBackup("Neue Buchung: " + gastName); 
-                kalenderRendern(); listenRendern(); 
-            } else { 
-                anfragen.push(...neueEintraege);
-                await _supabase.from('anfragen').insert(neueEintraege);
-                erstelleBackup("Neue Anfrage: " + gastName); 
-                alert("Anfrage gesendet!"); 
+            
+            try {
+                if (istAdmin) { 
+                    buchungen.push(...neueEintraege);
+                    const { error } = await _supabase.from('buchungen').insert(neueEintraege);
+                    if (error) throw error;
+                    erstelleBackup("Neue Buchung: " + gastName); 
+                    kalenderRendern(); listenRendern(); 
+                } else { 
+                    anfragen.push(...neueEintraege);
+                    const { error } = await _supabase.from('anfragen').insert(neueEintraege);
+                    if (error) throw error;
+                    erstelleBackup("Neue Anfrage: " + gastName); 
+                    alert("Anfrage gesendet!"); 
+                }
+                closeModal();
+            } catch (error) {
+                console.error(error);
+                zeigeDatenbankFehler();
             }
-            closeModal();
         }
 
         // Edit Popups
@@ -397,29 +451,49 @@
         async function saveEditModal() {
             let wId = document.getElementById("editWohnung").value; let start = document.getElementById("editStart").value; let end = document.getElementById("editEnd").value;
             let name = document.getElementById("editName").value.trim(); let kontakt = document.getElementById("editKontakt").value.trim();
-
             if (!start || !end || start >= end) { alert("Datum prüfen!"); return; }
             if (name === "") { alert("Name fehlt."); return; }
             if (pruefeUeberlappung(wId, start, end, editingBuchungId)) { alert("Überschneidung!"); return; }
-
+            
             let index = buchungen.findIndex(b => b.id === editingBuchungId);
             if(index !== -1) {
+                // Alte Werte für den Fehlerfall speichern
+                let alteWerte = { ...buchungen[index] };
+                
                 buchungen[index].wohnungId = parseInt(wId); buchungen[index].startDatum = start; buchungen[index].endDatum = end;
                 buchungen[index].gast = name; buchungen[index].kontakt = kontakt || "-";
                 
-                await _supabase.from('buchungen').update({
-                    wohnungId: parseInt(wId), startDatum: start, endDatum: end, gast: name, kontakt: kontakt || "-"
-                }).eq('id', editingBuchungId);
-
-                erstelleBackup("Bearbeitet: " + name); kalenderRendern(); listenRendern(); closeEditModal();
+                try {
+                    const { error } = await _supabase.from('buchungen').update({
+                        wohnungId: parseInt(wId), startDatum: start, endDatum: end, gast: name, kontakt: kontakt || "-"
+                    }).eq('id', editingBuchungId);
+                    if (error) throw error;
+                    
+                    erstelleBackup("Bearbeitet: " + name); kalenderRendern(); listenRendern(); closeEditModal();
+                } catch (error) {
+                    console.error(error);
+                    buchungen[index] = alteWerte; // Rückgängig bei Fehler
+                    zeigeDatenbankFehler();
+                }
             }
         }
+        
         async function deleteFromEditModal() {
             let b = buchungen.find(x => x.id === editingBuchungId);
             if(confirm("Wirklich löschen?")) {
+                let geloescht = buchungen.filter(x => x.id === editingBuchungId);
                 buchungen = buchungen.filter(x => x.id !== editingBuchungId);
-                await _supabase.from('buchungen').delete().eq('id', editingBuchungId);
-                erstelleBackup("Gelöscht: " + (b?b.gast:"")); kalenderRendern(); listenRendern(); closeEditModal();
+                
+                try {
+                    const { error } = await _supabase.from('buchungen').delete().eq('id', editingBuchungId);
+                    if (error) throw error;
+                    
+                    erstelleBackup("Gelöscht: " + (b?b.gast:"")); kalenderRendern(); listenRendern(); closeEditModal();
+                } catch (error) {
+                    console.error(error);
+                    buchungen.push(...geloescht); // Rückgängig bei Fehler
+                    zeigeDatenbankFehler();
+                }
             }
         }
 
@@ -427,7 +501,7 @@
         function ansichtWechseln() { ansichtModus = ansichtModus === 'monat' ? 'jahr' : 'monat'; document.getElementById("ansichtText").innerText = ansichtModus === 'monat' ? 'Monat' : 'Jahr'; klickAuswahl.aktiv = false; kalenderRendern(); }
         function direktDatumAuswahl() { aktuellerMonat = parseInt(document.getElementById("monatSelect").value); aktuellesJahr = parseInt(document.getElementById("jahrSelect").value); if(ansichtModus === 'jahr') { ansichtModus = 'monat'; document.getElementById("ansichtText").innerText = 'Monat'; } klickAuswahl.aktiv = false; kalenderRendern(); }
         function zeitAendern(verschiebung) { klickAuswahl.aktiv = false; if (ansichtModus === 'monat') { aktuellerMonat += verschiebung; if (aktuellerMonat > 11) { aktuellerMonat = 0; aktuellesJahr++; } else if (aktuellerMonat < 0) { aktuellerMonat = 11; aktuellesJahr--; } } else { aktuellesJahr += verschiebung; } kalenderRendern(); }
-
+        
         function kalenderRendern() {
             document.getElementById("kalenderTabelle").className = ansichtModus === 'monat' ? 'ansicht-monat' : 'ansicht-jahr';
             document.getElementById("monatSelect").value = aktuellerMonat; document.getElementById("jahrSelect").value = aktuellesJahr;
@@ -437,14 +511,25 @@
             kopfMonate.innerHTML = ""; kopfTage.innerHTML = ""; body.innerHTML = "";
 
             let startM = ansichtModus === 'monat' ? aktuellerMonat : 0; let endM = ansichtModus === 'monat' ? aktuellerMonat : 11;
+
             let thEcke = document.createElement("th"); thEcke.className = "sticky-col"; thEcke.innerText = ansichtModus === 'monat' ? "Objekt/Tag" : "Jahr " + aktuellesJahr;
             if(ansichtModus === 'jahr') thEcke.rowSpan = 2; else kopfTage.appendChild(thEcke);
             if(ansichtModus === 'jahr') kopfMonate.appendChild(thEcke);
 
+            const wochentageKurz = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
             for (let m = startM; m <= endM; m++) {
                 const tageImMonat = new Date(aktuellesJahr, m + 1, 0).getDate();
                 if(ansichtModus === 'jahr') { let thM = document.createElement("th"); thM.colSpan = tageImMonat; thM.innerText = monatsNamen[m]; kopfMonate.appendChild(thM); }
-                for (let tag = 1; tag <= tageImMonat; tag++) { let th = document.createElement("th"); th.innerText = tag; kopfTage.appendChild(th); }
+                
+                for (let tag = 1; tag <= tageImMonat; tag++) { 
+                    let th = document.createElement("th"); 
+                    let datum = new Date(aktuellesJahr, m, tag);
+                    let wochentag = wochentageKurz[datum.getDay()];
+                    
+                    th.innerHTML = `${tag}<br><span style="font-size: 10px; font-weight: normal; opacity: 0.9;">${wochentag}</span>`; 
+                    kopfTage.appendChild(th); 
+                }
             }
 
             wohnungen.forEach((wohnungName, wIndex) => {
@@ -484,16 +569,18 @@
                             let hoverText = istAdmin ? tagesBuchungen.map(b => `${b.gast} | ${formatDatum(b.startDatum)} - ${formatDatum(b.endDatum)}`).join('\n---\n') : (isWechsel ? "Wechseltag" : "Belegt");
                             tdTag.setAttribute("data-info", hoverText);
                         }
+
                         if(klickAuswahl.aktiv && klickAuswahl.wohnungId === wIndex && klickAuswahl.startDatum === tagString) tdTag.classList.add("klick-start");
                         tr.appendChild(tdTag);
                     }
                 }
                 body.appendChild(tr);
             });
+
             kopfMonate.style.display = ansichtModus === 'monat' ? 'none' : 'table-row';
             if(istAdmin) { filterJahreAktualisieren(); listenRendern(); }
         }
-
+        
         function zelleKlick(wIndex, datumStr, tdElement) {
             if (!klickAuswahl.aktiv) { klickAuswahl = { aktiv: true, wohnungId: wIndex, startDatum: datumStr, tdElement: tdElement }; kalenderRendern(); } 
             else {
@@ -511,23 +598,32 @@
             if(anfrage) {
                 if(pruefeUeberlappung(anfrage.wohnungId, anfrage.startDatum, anfrage.endDatum)) { alert("Zeitraum belegt!"); return; }
                 
-                // Lokal verschieben
-                buchungen.push(anfrage); 
-                anfragen = anfragen.filter(a => a.id !== id);
-                
-                // In Supabase verschieben
-                await _supabase.from('anfragen').delete().eq('id', id);
-                await _supabase.from('buchungen').insert([anfrage]);
-
-                erstelleBackup("Akzeptiert: " + anfrage.gast); kalenderRendern(); listenRendern();
+                try {
+                    await _supabase.from('anfragen').delete().eq('id', id);
+                    await _supabase.from('buchungen').insert([anfrage]);
+                    
+                    buchungen.push(anfrage); 
+                    anfragen = anfragen.filter(a => a.id !== id);
+                    erstelleBackup("Akzeptiert: " + anfrage.gast); kalenderRendern(); listenRendern();
+                } catch (error) {
+                    console.error(error);
+                    zeigeDatenbankFehler();
+                }
             }
         }
         
         async function anfrageAblehnen(id) { 
             if(confirm("Anfrage löschen?")) { 
+                let geloescht = anfragen.filter(a => a.id === id);
                 anfragen = anfragen.filter(a => a.id !== id); 
-                await _supabase.from('anfragen').delete().eq('id', id);
-                erstelleBackup("Anfrage gelöscht"); listenRendern(); 
+                try {
+                    await _supabase.from('anfragen').delete().eq('id', id);
+                    erstelleBackup("Anfrage gelöscht"); listenRendern(); 
+                } catch (error) {
+                    console.error(error);
+                    anfragen.push(...geloescht);
+                    zeigeDatenbankFehler();
+                }
             } 
         }
         
@@ -536,7 +632,7 @@
             let select = document.getElementById("filterJahr"); let aktuelleAuswahl = select.value || aktuellesJahr.toString(); select.innerHTML = '<option value="alle">Alle</option>';
             Array.from(jahre).sort().forEach(jahr => { let option = document.createElement("option"); option.value = jahr; option.text = jahr; if(jahr === aktuelleAuswahl) option.selected = true; select.appendChild(option); });
         }
-
+        
         function listenRendern() {
             if(!istAdmin) return;
             const anfragenBody = document.getElementById("anfragenBody"); anfragenBody.innerHTML = "";
@@ -559,56 +655,47 @@
             });
             if(listenBody.innerHTML === "") listenBody.innerHTML = "<tr><td colspan='6' style='padding:15px;'>Keine Buchungen.</td></tr>";
         }
-                // --- NEU: CSV EXPORT FUNKTION ---
+
+        // --- CSV EXPORT FUNKTION ---
         function exportiereDatenCSV() {
             if (buchungen.length === 0 && anfragen.length === 0) {
                 alert("Keine Daten zum Exportieren vorhanden.");
                 return;
             }
-
-            // CSV Header (Spaltenüberschriften)
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // \uFEFF für korrekte Excel-Umlaute
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; 
             csvContent += "Kategorie,ID,Objekt,Startdatum,Enddatum,Gast,Kontakt\n";
-
-            // Hilfsfunktion, um Texte sicher zu machen (falls jemand ein Komma in den Namen tippt)
             const escapeCSV = (text) => `"${String(text).replace(/"/g, '""')}"`;
-
-            // 1. Buchungen durchgehen
+            
             buchungen.forEach(b => {
                 let objektName = wohnungen[b.wohnungId] || "Unbekannt";
                 csvContent += `Buchung,${b.id},${escapeCSV(objektName)},${formatDatum(b.startDatum)},${formatDatum(b.endDatum)},${escapeCSV(b.gast)},${escapeCSV(b.kontakt)}\n`;
             });
-
-            // 2. Anfragen durchgehen
+            
             anfragen.forEach(a => {
                 let objektName = wohnungen[a.wohnungId] || "Unbekannt";
                 csvContent += `Anfrage,${a.id},${escapeCSV(objektName)},${formatDatum(a.startDatum)},${formatDatum(a.endDatum)},${escapeCSV(a.gast)},${escapeCSV(a.kontakt)}\n`;
             });
-
-            // Download anstoßen
+            
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            
-            // Dateiname mit heutigem Datum
             let heute = new Date().toISOString().split('T')[0];
             link.setAttribute("download", `Belegungsplan_Backup_${heute}.csv`);
-            
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
-                // --- NEU: CSV IMPORT (LADEN) FUNKTIONEN ---
+
+        // --- CSV IMPORT (LADEN) FUNKTIONEN ---
         function importiereDatenCSV() {
             if (confirm("ACHTUNG: Beim Laden werden alle aktuellen Buchungen und Anfragen überschrieben! Fortfahren?")) {
-                document.getElementById('csvFileInput').click(); // Öffnet das Datei-Auswahlfenster
+                document.getElementById('csvFileInput').click(); 
             }
         }
-
+        
         async function verarbeiteCSVImport(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = async function(e) {
                 const text = e.target.result;
@@ -616,13 +703,11 @@
                 
                 let neueBuchungen = [];
                 let neueAnfragen = [];
-
-                // Ab Zeile 2 einlesen (Zeile 1 ist der Header)
+                
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
                     if (!line) continue;
-
-                    // Eigenes CSV-Parsing, um eventuelle Kommas in Namen zu ignorieren
+                    
                     const values = [];
                     let insideQuote = false;
                     let currentValue = "";
@@ -637,8 +722,7 @@
                         }
                     }
                     values.push(currentValue);
-
-                    // Nur vollständige Zeilen verarbeiten
+                    
                     if (values.length >= 7) {
                         const kategorie = values[0];
                         const id = values[1];
@@ -647,18 +731,15 @@
                         const endDatumDDMMYYYY = values[4];
                         const gast = values[5];
                         const kontakt = values[6];
-
                         const wohnungId = wohnungen.indexOf(objekt);
                         if (wohnungId === -1) continue;
-
-                        // Datum von TT.MM.JJJJ zurück zu JJJJ-MM-TT wandeln
+                        
                         const startParts = startDatumDDMMYYYY.split('.');
                         const endParts = endDatumDDMMYYYY.split('.');
                         if(startParts.length !== 3 || endParts.length !== 3) continue;
-
                         const startDatum = `${startParts[2]}-${startParts[1]}-${startParts[0]}`;
                         const endDatum = `${endParts[2]}-${endParts[1]}-${endParts[0]}`;
-
+                        
                         const eintrag = {
                             id: id || Math.random().toString(36).substr(2, 9),
                             wohnungId: parseInt(wohnungId),
@@ -667,7 +748,7 @@
                             gast: gast,
                             kontakt: kontakt || "-"
                         };
-
+                        
                         if (kategorie === 'Buchung') {
                             neueBuchungen.push(eintrag);
                         } else if (kategorie === 'Anfrage') {
@@ -675,36 +756,27 @@
                         }
                     }
                 }
-
-                // 1. Supabase komplett leeren (mit Dummy-Filter 'neq', da Supabase Löschen ohne Filter blockiert)
-                await _supabase.from('buchungen').delete().neq('id', 'LADE_CSV_DELETE_ALL');
-                await _supabase.from('anfragen').delete().neq('id', 'LADE_CSV_DELETE_ALL');
-
-                // 2. Neue Daten in Supabase einfügen
-                if (neueBuchungen.length > 0) {
-                    await _supabase.from('buchungen').insert(neueBuchungen);
+                
+                try {
+                    await _supabase.from('buchungen').delete().neq('id', 'LADE_CSV_DELETE_ALL');
+                    await _supabase.from('anfragen').delete().neq('id', 'LADE_CSV_DELETE_ALL');
+                    
+                    if (neueBuchungen.length > 0) await _supabase.from('buchungen').insert(neueBuchungen);
+                    if (neueAnfragen.length > 0) await _supabase.from('anfragen').insert(neueAnfragen);
+                    
+                    buchungen = neueBuchungen;
+                    anfragen = neueAnfragen;
+                    kalenderRendern();
+                    if (istAdmin) listenRendern();
+                    alert("Daten wurden erfolgreich wiederhergestellt!");
+                } catch(error) {
+                    console.error(error);
+                    zeigeDatenbankFehler();
                 }
-                if (neueAnfragen.length > 0) {
-                    await _supabase.from('anfragen').insert(neueAnfragen);
-                }
-
-                // 3. Lokale Listen für die aktuelle Anzeige aktualisieren
-                buchungen = neueBuchungen;
-                anfragen = neueAnfragen;
-
-                // 4. Benutzeroberfläche neu zeichnen
-                kalenderRendern();
-                if (istAdmin) listenRendern();
-
-                alert("Daten wurden erfolgreich wiederhergestellt!");
-                document.getElementById('csvFileInput').value = ""; // Feld für nächsten Upload leeren
+                document.getElementById('csvFileInput').value = ""; 
             };
-            
-            // Datei als Text einlesen
             reader.readAsText(file);
         }
-
-
     </script>
 </body>
 </html>
